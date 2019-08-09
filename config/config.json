@@ -1,0 +1,17 @@
+{
+    "token": "",
+
+    "description": "",
+
+    "prefix": "a!",
+
+    "version": "PoC",
+
+    "game": "stuff",
+
+	"owner_id": 0,
+
+    "pm_help": "false",
+
+    "log": "taiga.log"
+}

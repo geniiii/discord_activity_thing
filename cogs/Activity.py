@@ -14,7 +14,7 @@ import traceback
 import arrow
 import json
 
-
+# fucking mess
 
 class Activity(commands.Cog):
     def __init__(self, bot):
@@ -150,7 +150,7 @@ class Activity(commands.Cog):
         if self.connection.open:
             return
         try:
-            thing = defaultdict(int)
+            data = defaultdict(int)
             self.connect()
 
             sql = "SELECT `timestamp` FROM `discord`.`channels` WHERE `id` = %s"
@@ -164,7 +164,7 @@ class Activity(commands.Cog):
                 cursor.close()
 
             async for msg in ctx.channel.history(limit=None, after=timestamp):
-                thing[msg.created_at.replace(
+                data[msg.created_at.replace(
                     minute=0, second=0, microsecond=0)] += 1
 
             with self.connection.cursor() as cursor:
@@ -173,18 +173,18 @@ class Activity(commands.Cog):
                 cursor.execute(
                     sql, (start_timestamp, ctx.message.channel.id))
 
-            for key in [*thing]:
+            for key in [*data]:
                 if key == 0:
                     continue
                 with self.connection.cursor() as cursor:
                     if timestamp is None:
                         sql = "REPLACE INTO `discord`.`messages_per_hour` VALUES (%s, %s, %s)"
                         cursor.execute(
-                            sql, (ctx.message.channel.id, key, thing[key]))
+                            sql, (ctx.message.channel.id, key, data[key]))
                     else:
                         sql = "UPDATE `discord`.`messages_per_hour` SET `messages` = `messages` + %s WHERE `channelid` = %s"
                         cursor.execute(
-                            sql, (thing[key], ctx.message.channel.id))
+                            sql, (data[key], ctx.message.channel.id))
                     cursor.close()
         except Exception:
             traceback.print_exc()
@@ -199,17 +199,17 @@ class Activity(commands.Cog):
             return
         try:
             self.connect()
-            thing = defaultdict(int)
+            data = defaultdict(int)
 
             sql = "SELECT * FROM `discord`.`activity` WHERE `channelid` = %s"
             with self.connection.cursor() as cursor:
                 cursor.execute(sql, (ctx.message.channel.id))
                 for val in cursor.fetchall():
-                    thing[self.get_username_from_id(
+                    data[self.get_username_from_id(
                         val["userid"])] = val["messages"]
 
             fig = go.Figure(
-                data=[go.Pie(labels=list(thing.keys()), values=list(thing.values()))])
+                data=[go.Pie(labels=list(data.keys()), values=list(data.values()))])
             img_bytes = fig.to_image(format="png", width=2240, height=1600)
             await ctx.send(file=discord.File(BytesIO(img_bytes), filename="guy.png"))
             fig.show()
@@ -225,22 +225,22 @@ class Activity(commands.Cog):
             return
         try:
             self.connect()
-            thing = defaultdict(int)
+            data = defaultdict(int)
 
             sql = "SELECT * FROM `discord`.`servers`"
             with self.connection.cursor() as cursor:
                 cursor.execute(sql, ())
                 for val in cursor.fetchall():
-                    thing[val["name"]] = val["messages"]
+                    data[val["name"]] = val["messages"]
 
             sql = "SELECT * FROM `discord`.`channels` WHERE `serverid` IS NULL"
             with self.connection.cursor() as cursor:
                 cursor.execute(sql, ())
                 for val in cursor.fetchall():
-                    thing[val["name"]] = val["messages"]
+                    data[val["name"]] = val["messages"]
 
             fig = go.Figure(
-                data=[go.Bar(x=list(thing.keys()), y=list(thing.values()))])
+                data=[go.Bar(x=list(data.keys()), y=list(data.values()))])
             img_bytes = fig.to_image(format="png", width=2240, height=1600)
             await ctx.send(file=discord.File(BytesIO(img_bytes), filename="guy.png"))
             fig.show()
@@ -251,32 +251,32 @@ class Activity(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def uc(self, ctx):
+    async def messages_per_user(self, ctx):
         if self.connection.open:
             return
         try:
             self.connect()
-            guy = []
-            thing = defaultdict(int)
+            users = []
+            data = defaultdict(int)
 
             sql = "SELECT * FROM `discord`.`users`"
             with self.connection.cursor() as cursor:
                 cursor.execute(sql, ())
                 for val in cursor.fetchall():
-                    guy.append(val["id"])
+                    users.append(val["id"])
                 cursor.close()
 
-            for user in guy:
+            for user in users:
                 sql = "SELECT * FROM `discord`.`activity` WHERE `userid` = %s"
                 with self.connection.cursor() as cursor:
                     cursor.execute(sql, (user))
                     for val in cursor.fetchall():
-                        thing[self.get_username_from_id(
+                        data[self.get_username_from_id(
                             user)] += val["messages"]
                     cursor.close()
 
             fig = go.Figure(
-                data=[go.Pie(labels=list(thing.keys()), values=list(thing.values()))])
+                data=[go.Pie(labels=list(data.keys()), values=list(data.values()))])
             img_bytes = fig.to_image(format="png", width=2240, height=1600)
             await ctx.send(file=discord.File(BytesIO(img_bytes), filename="guy.png"))
             fig.show()
@@ -294,13 +294,13 @@ class Activity(commands.Cog):
             member = ctx.author
         try:
             self.connect()
-            thing = defaultdict(int)
+            data = defaultdict(int)
 
             sql = "SELECT * FROM `discord`.`activity` WHERE `userid` = %s AND `serverid` IS NULL"
             with self.connection.cursor() as cursor:
                 cursor.execute(sql, (member.id))
                 for val in cursor.fetchall():
-                    thing[self.get_channel_name_from_id(
+                    data[self.get_channel_name_from_id(
                         val["channelid"])] += val["messages"]
                 cursor.close()
 
@@ -308,12 +308,12 @@ class Activity(commands.Cog):
             with self.connection.cursor() as cursor:
                 cursor.execute(sql, (member.id))
                 for val in cursor.fetchall():
-                    thing[self.get_server_name_from_id(
+                    data[self.get_server_name_from_id(
                         val["serverid"])] += val["messages"]
                 cursor.close()
 
             fig = go.Figure(
-                data=[go.Pie(labels=list(thing.keys()), values=list(thing.values()))])
+                data=[go.Pie(labels=list(data.keys()), values=list(data.values()))])
             img_bytes = fig.to_image(format="png", width=2240, height=1600)
             await ctx.send(file=discord.File(BytesIO(img_bytes), filename="guy.png"))
             fig.show()
@@ -329,17 +329,17 @@ class Activity(commands.Cog):
             return
         try:
             self.connect()
-            thing = defaultdict(int)
+            data = defaultdict(int)
 
             sql = "SELECT * FROM `discord`.`messages_per_hour` WHERE `channelid` = %s"
             with self.connection.cursor() as cursor:
                 cursor.execute(sql, (ctx.message.channel.id))
                 for val in cursor.fetchall():
-                    thing[str(val["timestamp"])] = val["messages"]
+                    data[str(val["timestamp"])] = val["messages"]
                 cursor.close()
 
             fig = go.Figure(
-                data=[go.Scatter(x=list(thing.keys()), y=list(thing.values()))])
+                data=[go.Scatter(x=list(data.keys()), y=list(data.values()))])
             img_bytes = fig.to_image(format="png", width=2240, height=1600)
             await ctx.send(file=discord.File(BytesIO(img_bytes), filename="guy.png"))
             fig.show()
@@ -355,18 +355,18 @@ class Activity(commands.Cog):
             return
         try:
             self.connect()
-            thing = defaultdict(int)
+            data = defaultdict(int)
 
             sql = "SELECT * FROM `discord`.`messages_per_hour` WHERE `channelid` = %s"
             with self.connection.cursor() as cursor:
                 cursor.execute(sql, (ctx.message.channel.id))
                 for val in cursor.fetchall():
-                    thing[str(val["timestamp"].replace(hour=0))
+                    data[str(val["timestamp"].replace(hour=0))
                           ] += val["messages"]
                 cursor.close()
 
             fig = go.Figure(
-                data=[go.Scatter(x=list(thing.keys()), y=list(thing.values()))])
+                data=[go.Scatter(x=list(data.keys()), y=list(data.values()))])
             img_bytes = fig.to_image(format="png", width=2240, height=1600)
             await ctx.send(file=discord.File(BytesIO(img_bytes), filename="guy.png"))
             fig.show()
@@ -382,18 +382,18 @@ class Activity(commands.Cog):
             return
         try:
             self.connect()
-            thing = defaultdict(int)
+            data = defaultdict(int)
 
             sql = "SELECT * FROM `discord`.`messages_per_hour` WHERE `channelid` = %s"
             with self.connection.cursor() as cursor:
                 cursor.execute(sql, (ctx.message.channel.id))
                 for val in cursor.fetchall():
-                    thing[str(val["timestamp"].replace(
+                    data[str(val["timestamp"].replace(
                         day=1, hour=0))] += val["messages"]
                 cursor.close()
 
             fig = go.Figure(
-                data=[go.Scatter(x=list(thing.keys()), y=list(thing.values()))])
+                data=[go.Scatter(x=list(data.keys()), y=list(data.values()))])
             img_bytes = fig.to_image(format="png", width=2240, height=1600)
             await ctx.send(file=discord.File(BytesIO(img_bytes), filename="guy.png"))
             fig.show()

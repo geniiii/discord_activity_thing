@@ -153,7 +153,7 @@ class Activity(commands.Cog):
             data = defaultdict(int)
             self.connect()
 
-            sql = "SELECT `timestamp` FROM `discord`.`channels` WHERE `id` = %s"
+            sql = "SELECT `hour_timestamp` FROM `discord`.`channels` WHERE `id` = %s"
             timestamp = None
             with self.connection.cursor() as cursor:
                 cursor.execute(sql, (ctx.message.channel.id))
@@ -177,14 +177,9 @@ class Activity(commands.Cog):
                 if key == 0:
                     continue
                 with self.connection.cursor() as cursor:
-                    if timestamp is None:
-                        sql = "REPLACE INTO `discord`.`messages_per_hour` VALUES (%s, %s, %s)"
-                        cursor.execute(
-                            sql, (ctx.message.channel.id, key, data[key]))
-                    else:
-                        sql = "UPDATE `discord`.`messages_per_hour` SET `messages` = `messages` + %s WHERE `channelid` = %s"
-                        cursor.execute(
-                            sql, (data[key], ctx.message.channel.id))
+                    sql = "REPLACE INTO `discord`.`messages_per_hour` VALUES (%s, %s, %s)"
+                    cursor.execute(
+                        sql, (ctx.message.channel.id, key, data[key]))
                     cursor.close()
         except Exception:
             traceback.print_exc()

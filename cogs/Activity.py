@@ -16,6 +16,7 @@ import json
 
 # fucking mess
 
+
 class Activity(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -169,9 +170,15 @@ class Activity(commands.Cog):
 
             with self.connection.cursor() as cursor:
                 start_timestamp = datetime.datetime.utcnow() + datetime.timedelta(microseconds=10)
-                sql = "UPDATE `discord`.`channels` SET `hour_timestamp` = %s WHERE `id` = %s"
-                cursor.execute(
-                    sql, (start_timestamp, ctx.message.channel.id))
+                if timestamp is None:
+                    sql = "REPLACE INTO `discord`.`channels` (`id`, `serverid`, `name`, `hour_timestamp`) VALUES (%s, %s, %s, %s)"
+                    cursor.execute(sql, (ctx.message.channel.id, ctx.message.guild.id,
+                                         ctx.message.channel.name, start_timestamp))
+                else:
+                    sql = "UPDATE `discord`.`channels` SET `hour_timestamp` = %s WHERE `id` = %s"
+                    cursor.execute(
+                        sql, (start_timestamp, ctx.message.channel.id))
+                cursor.close()
 
             for key in [*data]:
                 if key == 0:
@@ -357,7 +364,7 @@ class Activity(commands.Cog):
                 cursor.execute(sql, (ctx.message.channel.id))
                 for val in cursor.fetchall():
                     data[str(val["timestamp"].replace(hour=0))
-                          ] += val["messages"]
+                         ] += val["messages"]
                 cursor.close()
 
             fig = go.Figure(

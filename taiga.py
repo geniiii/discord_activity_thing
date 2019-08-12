@@ -71,26 +71,6 @@ def taiga():
         elif etype == "info":
             taiga_log.info(msg)
 
-    @bot.event
-    async def on_command_error(ctx, error):
-        channel = ctx.message.channel
-        if isinstance(error, CommandOnCooldown):
-            await channel.send("the command {.command} is on cooldown, {}. wait {:.2f} seconds to use it again.".format(ctx,
-                                                                                                                        ctx.message.author.name,
-                                                                                                                        error.retry_after))
-        elif isinstance(error, CommandNotFound):
-            await channel.send("command not found")
-        elif isinstance(error, NotOwner):
-            await channel.send("fuck off")
-        elif isinstance(error, OpusError):
-            await prlog("libopus error: {}".format(error), "error")
-        elif isinstance(error, OpusNotLoaded):
-            await prlog("libopus isn't loaded: {}".format(error), "error")
-        elif isinstance(error, ConnectionClosed):
-            await prlog("connection closed? possibly internet connection issue. reason: {}\ncode: {}\n shard ID: {}".format(error.reason, error.code, error.shard_id), "error")
-        elif isinstance(error, Forbidden):
-            await channel.send("nope")
-
     with open(cogs_json) as cogs_list:
         cogs = json.load(cogs_list)
 

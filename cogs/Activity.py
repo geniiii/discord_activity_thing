@@ -172,7 +172,7 @@ class Activity(commands.Cog):
                 start_timestamp = datetime.datetime.utcnow() + datetime.timedelta(microseconds=10)
                 if timestamp is None:
                     sql = "REPLACE INTO `discord`.`channels` (`id`, `serverid`, `name`, `hour_timestamp`) VALUES (%s, %s, %s, %s)"
-                    cursor.execute(sql, (ctx.message.channel.id, ctx.message.guild.id,
+                    cursor.execute(sql, (ctx.message.channel.id, ctx.message.guild.id if ctx.message.guild is not None else None,
                                          ctx.message.channel.name, start_timestamp))
                 else:
                     sql = "UPDATE `discord`.`channels` SET `hour_timestamp` = %s WHERE `id` = %s"

@@ -114,14 +114,23 @@ class Activity(commands.Cog):
                     messages_in_channel += val["messages"]
                 cursor.close()
 
-            sql = "REPLACE INTO `discord`.`channels` (`id`, `serverid`, `name`, `timestamp`, `messages`) VALUES (%s, %s, %s, %s, %s)"
-            with self.connection.cursor() as cursor:
-                cursor.execute(sql, (ctx.message.channel.id,
-                                     ctx.message.guild.id if ctx.message.guild is not None else None,
-                                     ctx.message.channel.name,
-                                     start_timestamp,
-                                     messages_in_channel))
-                cursor.close()
+            if timestamp is not None:
+                sql = "UPDATE `discord`.`channels` SET `name` = %s, `timestamp` = %s, `messages` = %s WHERE `id` = %s"
+                with self.connection.cursor() as cursor:
+                    cursor.execute(sql, (ctx.message.channel.name,
+                                        start_timestamp,
+                                        messages_in_channel,
+                                        ctx.message.channel.id))
+                    cursor.close()
+            else:
+                sql = "INSERT INTO `discord`.`channels` (`id`, `serverid`, `name`, `timestamp`, `messages`) VALUES (%s, %s, %s, %s, %s)"
+                with self.connection.cursor() as cursor:
+                    cursor.execute(sql, (ctx.message.channel.id,
+                                         ctx.message.guild.id if ctx.message.guild is not None else None,
+                                         ctx.message.channel.name,
+                                         start_timestamp,
+                                         messages_in_channel))
+                    cursor.close()
 
             if ctx.message.guild is not None:
                 messages_in_server = 0
@@ -159,7 +168,8 @@ class Activity(commands.Cog):
             with self.connection.cursor() as cursor:
                 cursor.execute(sql, (ctx.message.channel.id))
                 try:
-                    timestamp = cursor.fetchone()["hour_timestamp"]
+                    res = cursor.fetchone()
+                    timestamp = res["hour_timestamp"]
                 except:
                     pass
                 cursor.close()
@@ -170,8 +180,8 @@ class Activity(commands.Cog):
 
             with self.connection.cursor() as cursor:
                 start_timestamp = datetime.datetime.utcnow() + datetime.timedelta(microseconds=10)
-                if timestamp is None:
-                    sql = "REPLACE INTO `discord`.`channels` (`id`, `serverid`, `name`, `hour_timestamp`) VALUES (%s, %s, %s, %s)"
+                if res is None:
+                    sql = "INSERT INTO `discord`.`channels` (`id`, `serverid`, `name`, `hour_timestamp`, `timestamp`) VALUES (%s, %s, %s, %s, `timestamp`)"
                     cursor.execute(sql, (ctx.message.channel.id, ctx.message.guild.id if ctx.message.guild is not None else None,
                                          ctx.message.channel.name, start_timestamp))
                 else:
